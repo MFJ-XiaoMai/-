@@ -18,11 +18,17 @@
       <!-- 用户信息/登录注册 -->
       <el-row type="flex" align="middle">
         <!-- 如果用户已登录则显示用户信息，用户数据来自store -->
-        <el-dropdown v-if="true">
+        <!-- v-if="$store.state.user.userInfo.token"  
+        判断user下的userInfo对象里的token是否有值，若有则为true，显示用户头像
+        否则显示登录/注册 -->
+        <el-dropdown v-if="$store.state.user.userInfo.token">
           <el-row type="flex" align="middle" class="el-dropdown-link">
             <nuxt-link to="#">
-              <img src="http://157.122.54.189:9093/images/pic_sea.jpeg">
-              用户名
+              <!-- <img src="http://157.122.54.189:9093/images/pic_sea.jpeg"> -->
+              <img :src="$axios.defaults.baseURL+
+              $store.state.user.userInfo.user.defaultAvatar">
+              <!-- 动态获取用户名 -->
+              <span>{{$store.state.user.userInfo.user.nickname}}</span>
             </nuxt-link>
             <i class="el-icon-caret-bottom el-icon--right"></i>
           </el-row>
@@ -38,15 +44,28 @@
 
         <!-- 当用户处于未登录状态时，显示登录注册链接 -->
         <nuxt-link to="/user/login" class="account-link" v-else>登录/注册</nuxt-link>
+
+        <!-- <div v-else class="login-link">
+          <nuxt-link to='/user/login'>
+            显示store的token：
+          </nuxt-link>
+        </div> -->
       </el-row>
     </el-row>
   </header>
 </template>
 <script>
 export default {
+  mounted(){
+    console.log(this.$store);
+    // console.log(this.$store.state.user.userInfo.token);//user是store/user.js中的文件名
+  },
   methods: {
     // 用户退出
-    handleLogout() {}
+    handleLogout() {
+      //调用user文件里store下的mutations的方法来清空store的user/state下的数据
+      this.$store.commit('user/clearUserInfo')
+    }
   }
 };
 </script>
