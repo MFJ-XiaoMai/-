@@ -35,7 +35,8 @@ export default {
     {
       src: '@/plugins/localStorage', 
       ssr: false 
-    }
+    },
+    '@/plugins/axios'   //调用插件
   ],
   /*
   ** Nuxt.js modules
