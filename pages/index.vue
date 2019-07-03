@@ -70,7 +70,7 @@ export default {
     this.$axios({
       url: "/scenics/banners"
     }).then(res => {
-      console.log(res);
+      // console.log(res);
       const { data } = res.data;
       // 把数组保存到banners
       this.banners = data;

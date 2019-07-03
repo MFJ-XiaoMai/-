@@ -57,7 +57,7 @@
 <script>
 export default {
   mounted(){
-    console.log(this.$store);
+    // console.log(this.$store);
     // console.log(this.$store.state.user.userInfo.token);//user是store/user.js中的文件名
   },
   methods: {

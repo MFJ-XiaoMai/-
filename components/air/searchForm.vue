@@ -162,7 +162,7 @@ export default {
       this.form.departDate=moment(value).format('YYYY-MM-DD')
     },
 
-    // 触发和目标城市切换时触发
+    // 出发和目标城市切换时触发
     handleReverse() {
       const {departCity,departCode,destCity,destCode} = this.form
       // 将到达城市的值赋值给出发城市
@@ -172,7 +172,7 @@ export default {
       this.form.destCode = departCode;
     },
 
-    // 提交表单是触发
+    // 提交表单时触发
     handleSubmit() {
       // console.log(this.form);
 
@@ -216,12 +216,23 @@ export default {
       if( !valid ){
         return;
       }
+
       // 跳转到列表页
       this.$router.push({
         path:'/air/flights',
         // query 获取地址栏的参数
         query:this.form
       })
+
+      //将当前表单的值保存到本地
+      const localAirs = JSON.parse(localStorage.getItem('airs') || `[]`)
+
+      //存进去新的搜索记录：在数组的最前面追加一组数据
+      //unshift
+      localAirs.unshift(this.form);
+
+      // 保存到本地
+      localStorage.setItem('airs',JSON.stringify(localAirs));
     }
   },
   mounted() {}
