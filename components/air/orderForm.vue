@@ -30,11 +30,12 @@
     <div class="air-column">
       <h2>保险</h2>
       <div>
-        <div class="insurance-item"
-        v-for="(item,index) in infoData.insurances"
-        :key='index'>
-          <el-checkbox 
-          :label="`${item.type}：￥${item.price}/份×1  最高赔付${item.compensation}`" border></el-checkbox>
+        <div class="insurance-item" v-for="(item,index) in infoData.insurances" :key="index">
+          <el-checkbox
+            :label="`${item.type}：￥${item.price}/份×1  最高赔付${item.compensation}`"
+            border
+            @change="handleInsurance(item.id)"
+          ></el-checkbox>
         </div>
       </div>
     </div>
@@ -44,11 +45,11 @@
       <div class="contact">
         <el-form label-width="60px">
           <el-form-item label="姓名">
-            <el-input></el-input>
+            <el-input v-model="contactName"></el-input>
           </el-form-item>
 
           <el-form-item label="手机">
-            <el-input placeholder="请输入内容">
+            <el-input placeholder="请输入手机号码" v-model="contactPhone">
               <template slot="append">
                 <el-button @click="handleSendCaptcha">发送验证码</el-button>
               </template>
@@ -56,12 +57,13 @@
           </el-form-item>
 
           <el-form-item label="验证码">
-            <el-input></el-input>
+            <el-input v-model="captcha"></el-input>
           </el-form-item>
         </el-form>
         <el-button type="warning" class="submit" @click="handleSubmit">提交订单</el-button>
       </div>
     </div>
+    <input type='hidden' :value="allPrice"/>
   </div>
 </template>
 
@@ -69,6 +71,7 @@
 export default {
   data() {
     return {
+      //用户数据
       users: [
         {
           username: "",
@@ -76,10 +79,44 @@ export default {
         }
       ],
       // 机票信息
-      infoData:{
-        insurances:[]
-      }
+      infoData: {
+        insurances: [],
+        seat_infos: {}
+      },
+
+      // 表单数据
+      insurances: [], //选中的保险id
+      contactName: "", //联系人
+      contactPhone: "", //联系电话
+      invoice: false, //不需要发票
+      captcha: "" //手机验证码
     };
+  },
+
+  computed: {
+    //计算总价格
+    allPrice() {
+      let price = 0;
+
+      //机票单价
+      price += this.infoData.seat_infos.org_settle_price;
+
+      //添加燃油费
+      price += this.infoData.airport_tax_audlet;
+
+      //保险
+      // price += this.insurances.length * this.infoData.insurances.price;
+      price += this.insurances.length * 30;
+
+      //总价格
+      price *= this.users.length;
+
+      //把总价格传递给父组件
+      this.$emit("setAllPrice", price);
+
+      // console.log(price);
+      return price;
+    }
   },
 
   methods: {
@@ -96,11 +133,85 @@ export default {
       this.users.splice(index, 1);
     },
 
+    //选择的保险的时候触发，把保险的id添加到data的insurances中
+    handleInsurance(id) {
+      const index = this.insurances.indexOf(id);
+
+      if (index === -1) {
+        this.insurances.push(id);
+      } else {
+        this.insurances.splice(index, 1);
+      }
+      // console.log(this.insurances);
+    },
     // 发送手机验证码
-    handleSendCaptcha() {},
+    handleSendCaptcha() {
+      // 判断手机号不能为空
+      if (this.contactPhone == "") {
+        this.$confirm("手机号不能为空", "提示", {
+          confirmButtonText: "确定",
+          type: "warning"
+        });
+        return;
+      }
+
+      //请求验证码
+      this.$axios({
+        url: "/captchas",
+        method: "POST",
+        data: {
+          tel: this.contactPhone
+        }
+      }).then(res => {
+        // console.log(res.data);
+        const { code } = res.data;
+        this.$alert("手机验证码是：" + code, "提示", {
+          confirmButtonText: "确定"
+        });
+      });
+    },
 
     // 提交订单
-    handleSubmit() {}
+    handleSubmit() {
+      const data = {
+        users: this.users,
+        insurances: this.insurances,
+        contactName: this.contactName,
+        contactPhone: this.contactPhone,
+        captcha: this.captcha,
+        invoice: this.invoice,
+        seat_xid: this.$route.query.seat_xid,
+        air: this.$route.query.id
+      };
+
+      //获取token
+      const token = this.$store.state.user.userInfo.token;
+
+      //提交生成机票的订单
+      this.$axios({
+        url: "/airorders",
+        method: "POST",
+        data,
+        //访问需要登录授权接口：需要添加头信息Authorization
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }).then(res => {
+        // console.log(res);
+
+        this.$message.success('正在生成订单，请稍后...')
+        
+        //订单id
+        const {id} = res.data.data
+        //跳转到订单页
+        this.$router.push({
+          path:'/air/pay',
+          query:{
+            id
+          }
+        })
+      });
+    }
   },
 
   mounted() {
@@ -112,8 +223,10 @@ export default {
         seat_xid: this.$route.query.seat_xid
       }
     }).then(res => {
-      console.log(res.data);
-      this.infoData = res.data
+      // console.log(res.data);
+      this.infoData = res.data;
+
+      this.$emit("setInfoData", this.infoData);
     });
   }
 };
